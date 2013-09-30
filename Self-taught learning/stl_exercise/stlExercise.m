@@ -70,14 +70,15 @@ theta = initializeParameters(hiddenSize, inputSize);
 %  unlabeledTrainingImages
 
 opttheta = theta; 
-
-
-
-
-
-
-
-
+addpath minFunc/
+options.Method = 'lbfgs';
+options.maxIter = 400;
+options.display = 'on';
+[opttheta, loss] = minFunc( @(p) sparseAutoencoderCost(p, ...
+      inputSize, hiddenSize, ...
+      lambda, sparsityParam, ...
+      beta, unlabeledData), ...
+      theta, options);
 
 %% -----------------------------------------------------
                           
@@ -110,13 +111,13 @@ softmaxModel = struct;
 % You need to compute softmaxModel using softmaxTrain on trainFeatures and
 % trainLabels
 
+lambda = 1e-4;
+inputSize = hiddenSize;
+numClasses = numel(unique(trainLabels));
 
-
-
-
-
-
-
+options.maxIter = 100;
+softmaxModel = softmaxTrain(inputSize, numClasses, lambda, ...
+    trainFeatures, trainLabels, options);
 
 
 %% -----------------------------------------------------
@@ -129,19 +130,7 @@ softmaxModel = struct;
 % Compute Predictions on the test set (testFeatures) using softmaxPredict
 % and softmaxModel
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+[pred] = softmaxPredict(softmaxModel, testFeatures);
 
 %% -----------------------------------------------------
 
