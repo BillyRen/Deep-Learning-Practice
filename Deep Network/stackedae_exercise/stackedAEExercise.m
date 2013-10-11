@@ -55,6 +55,7 @@ sae1Theta = initializeParameters(hiddenSizeL1, inputSize);
 %                an hidden size of "hiddenSizeL1"
 %                You should store the optimal parameters in sae1OptTheta
 
+addpath minFunc/;
 options = struct;
 options.Method = 'lbfgs';
 options.maxIter = 400;
