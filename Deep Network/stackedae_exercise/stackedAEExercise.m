@@ -22,6 +22,7 @@ inputSize = 28 * 28;
 numClasses = 10;
 hiddenSizeL1 = 200;    % Layer 1 Hidden Size
 hiddenSizeL2 = 200;    % Layer 2 Hidden Size
+hiddenSizeL3 = 200;    % Layer 3 Hidden Size
 sparsityParam = 0.1;   % desired average activation of the hidden units.
                        % (This was denoted by the Greek alphabet rho, which looks like a lower-case "p",
 		               %  in the lecture notes). 
@@ -96,16 +97,30 @@ save('saves/step3.mat', 'sae2OptTheta');
 
 
 %%======================================================================
+
+%%STEP 2.5: Train the third sparse autoencoder
+[sae2Features] = feedForwardAutoencoder(sae2OptTheta, hiddenSizeL2, ...
+                                        hiddensieL1, sae1Features);
+sae3Theta = initializeParameters(hiddenSizeL3, hiddenSizeL2);
+
+[sae3OptTheta, cost] =  minFunc(@(p)sparseAutoencoderCost(p,...
+    hiddenSizeL2,hiddenSizeL3,lambda,sparsityParam,beta,sae2Features),sae3Theta,options);
+save('saves/step3.5.mat', 'sae3OptTheta');
+
 %% STEP 3: Train the softmax classifier
 %  This trains the sparse autoencoder on the second autoencoder features.
 %  If you've correctly implemented softmaxCost.m, you don't need
 %  to change anything here.
 
-[sae2Features] = feedForwardAutoencoder(sae2OptTheta, hiddenSizeL2, ...
-                                        hiddenSizeL1, sae1Features);
+%[sae2Features] = feedForwardAutoencoder(sae2OptTheta, hiddenSizeL2, ...
+%                                        hiddenSizeL1, sae1Features);
+[sae3Features] = feedForwardAutoencoder(sae3OptTheta, hiddenSizeL3, ...
+                                        hiddenSizeL2, sae2Features);
+
 
 %  Randomly initialize the parameters
-saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
+%saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
+saeSoftmaxTheta = 0.005 * randn(hiddenSizeL3 * numClasses, 1);
 
 
 %% ---------------------- YOUR CODE HERE  ---------------------------------
@@ -122,8 +137,10 @@ softmaxLambda = 1e-4;
 numClasses = 10;
 softoptions = struct;
 softoptions.maxIter = 400;
-softmaxModel = softmaxTrain(hiddenSizeL2,numClasses,softmaxLambda,...
-                            sae2Features,trainLabels,softoptions);
+%softmaxModel = softmaxTrain(hiddenSizeL2,numClasses,softmaxLambda,...
+%                            sae2Features,trainLabels,softoptions);
+softmaxModel = softmaxTrain(hiddenSizeL3,numClasses,softmaxLambda,...
+                            sae3Features,trainLabels,softoptions);
 saeSoftmaxOptTheta = softmaxModel.optTheta(:);
 
 save('saves/step4.mat', 'saeSoftmaxOptTheta');
@@ -139,13 +156,17 @@ save('saves/step4.mat', 'saeSoftmaxOptTheta');
 % then run this cell.
 
 % Initialize the stack using the parameters learned
-stack = cell(2,1);
+%stack = cell(2,1);
+stack = cell(3,1);
 stack{1}.w = reshape(sae1OptTheta(1:hiddenSizeL1*inputSize), ...
                      hiddenSizeL1, inputSize);
 stack{1}.b = sae1OptTheta(2*hiddenSizeL1*inputSize+1:2*hiddenSizeL1*inputSize+hiddenSizeL1);
 stack{2}.w = reshape(sae2OptTheta(1:hiddenSizeL2*hiddenSizeL1), ...
                      hiddenSizeL2, hiddenSizeL1);
 stack{2}.b = sae2OptTheta(2*hiddenSizeL2*hiddenSizeL1+1:2*hiddenSizeL2*hiddenSizeL1+hiddenSizeL2);
+stack{3}.w = reshape(sae3OptTheta(1:hiddenSizeL3*hiddenSizeL2), ...
+                     hiddenSizeL3, hiddenSizeL2);
+stack{3}.b = sae3OptTheta(2*hiddenSizeL3*hiddenSizeL2+1:2*hiddenSizeL3*hiddenSizeL2+hiddenSizeL3);
 
 % Initialize the parameters for the deep model
 [stackparams, netconfig] = stack2params(stack);
@@ -158,7 +179,10 @@ stackedAETheta = [ saeSoftmaxOptTheta ; stackparams ];
 %
 %
 
-[stackedAEOptTheta, cost] =  minFunc(@(p)stackedAECost(p,inputSize,hiddenSizeL2,...
+%[stackedAEOptTheta, cost] =  minFunc(@(p)stackedAECost(p,inputSize,hiddenSizeL2,...
+%                         numClasses, netconfig,lambda, trainData, trainLabels),...
+%                        stackedAETheta,options);
+[stackedAEOptTheta, cost] =  minFunc(@(p)stackedAECost(p,inputSize,hiddenSizeL3,...
                          numClasses, netconfig,lambda, trainData, trainLabels),...
                         stackedAETheta,options);
 save('saves/step5.mat', 'stackedAEOptTheta');
