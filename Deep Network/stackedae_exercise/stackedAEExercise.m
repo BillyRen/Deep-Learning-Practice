@@ -100,7 +100,7 @@ save('saves/step3.mat', 'sae2OptTheta');
 
 %%STEP 2.5: Train the third sparse autoencoder
 [sae2Features] = feedForwardAutoencoder(sae2OptTheta, hiddenSizeL2, ...
-                                        hiddensieL1, sae1Features);
+                                        hiddenSizeL1, sae1Features);
 sae3Theta = initializeParameters(hiddenSizeL3, hiddenSizeL2);
 
 [sae3OptTheta, cost] =  minFunc(@(p)sparseAutoencoderCost(p,...
